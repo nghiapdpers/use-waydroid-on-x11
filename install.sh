@@ -37,13 +37,19 @@ install_waydroid() {
         return 1
     fi
     
-    # Optional: Verify the script before execution
+    # Verify the script before execution (read from /dev/tty if available)
     echo "Repository script downloaded to $repo_script"
     echo "Please review the script before proceeding:"
     echo "---"
     head -n 20 "$repo_script"
     echo "---"
-    read -rp "Do you want to continue? (yes/no): " confirm
+    
+    # Read from /dev/tty if available (for pipe compatibility), else fall back to stdin
+    if [ -t 0 ] || [ -c /dev/tty ]; then
+        read -rp "Do you want to continue? (yes/no): " confirm < /dev/tty || confirm=""
+    else
+        read -rp "Do you want to continue? (yes/no): " confirm || confirm=""
+    fi
     
     if [ "$confirm" != "yes" ]; then
         echo "Installation cancelled."
@@ -62,7 +68,13 @@ initialize_waydroid() {
     echo "Choose Android mode for Waydroid:"
     echo "1) Vanilla (No Google Apps)"
     echo "2) GApps (With Google Apps)"
-    read -rp "Enter your choice (1 or 2): " choice
+    
+    # Read from /dev/tty if available (for pipe compatibility), else fall back to stdin
+    if [ -t 0 ] || [ -c /dev/tty ]; then
+        read -rp "Enter your choice (1 or 2): " choice < /dev/tty || choice=""
+    else
+        read -rp "Enter your choice (1 or 2): " choice || choice=""
+    fi
 
     case $choice in
         1)
