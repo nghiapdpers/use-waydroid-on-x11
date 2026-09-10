@@ -20,14 +20,15 @@
 6. [Automation](#automation)
    - [Startup Scripts](#startup-scripts)
 7. [Uninstallation](#uninstallation)
-8. [Troubleshooting](#troubleshooting)
-9. [References](#references)
+8. [Security Notes](#security-notes)
+9. [Troubleshooting](#troubleshooting)
+10. [References](#references)
 
 ---
 
 ## Introduction
 
-This comprehensive guide walks you through setting up and optimizing **Waydroid** on an X11-based Linux system. Waydroid offers a seamless Android container experience, tightly integrated into your Linux desktop. We cover everything from installation to advanced configuration to ensure a smooth experience.
+This comprehensive guide walks you through setting up and optimizing **Waydroid** on an X11-based Linux system. Waydroid offers a seamless Android container experience, tightly integrated into your desktop environment, with enhanced security practices throughout.
 
 ---
 
@@ -37,12 +38,12 @@ Ensure your system meets these prerequisites:
 
 - Running an **X11 desktop environment**.
 - Administrative privileges (sudo).
-- Essential packages: **curl** and **ca-certificates**.
+- Essential packages: **curl**, **ca-certificates**, and **python3-pip**.
 
 Install the prerequisites:
 
 ```bash
-sudo apt install curl ca-certificates -y
+sudo apt install curl ca-certificates python3-pip wl-clipboard -y
 ```
 
 ---
@@ -51,11 +52,13 @@ sudo apt install curl ca-certificates -y
 
 ### Auto Install
 
-You can use the following one-liner to install and set up Waydroid directly.
+You can use the following one-liner to install and set up Waydroid directly with **security verification**:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/1999AZZAR/use-waydroid-on-x11/master/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/nghiapdpers/use-waydroid-on-x11/master/install.sh | sudo bash
 ```
+
+**Note:** The installation script will prompt you to review the repository setup script before execution for security purposes.
 
 ### Manual Install
 
@@ -69,9 +72,21 @@ sudo apt install cage weston -y
 
 #### Installing Waydroid
 
-##### Step 1: Add the Waydroid Repository
+##### Step 1: Add the Waydroid Repository (Securely)
 
-Add the repository:
+**Secure method** (recommended - review before execution):
+
+```bash
+repo_script=$(mktemp)
+curl -fsSL https://repo.waydro.id -o "$repo_script"
+# Review the script
+head -n 20 "$repo_script"
+# Then execute it
+sudo bash "$repo_script"
+rm "$repo_script"
+```
+
+**Quick method** (if you trust the source):
 
 ```bash
 curl https://repo.waydro.id | sudo bash
@@ -97,7 +112,7 @@ Follow these steps with Weston running (nested on X11 is the expected case here)
    weston --xwayland
    ```
 
-   If you use a custom socket (`weston --socket=NAME`), set `export WAYLAND_DISPLAY=NAME` in any terminal where you run Waydroid. If a compositor already uses `wayland-0` (for example you are not on a plain X11 desktop), Weston may create `wayland-1` instead; list sockets with `ls "$XDG_RUNTIME_DIR"/wayland-*` and export the one Weston opened.
+   If you use a custom socket (`weston --socket=NAME`), set `export WAYLAND_DISPLAY=NAME` in any terminal where you run Waydroid. If a compositor already uses `wayland-0` (for example you are not[...]
 
 2. **Initialize Waydroid**:
    
@@ -158,8 +173,14 @@ waydroid session stop
 Run this script to hide Waydroid apps from the system launcher:
 
 ```bash
+bash hide_waydroid_apps.sh
+```
+
+Or manually:
+
+```bash
 for app in ~/.local/share/applications/waydroid.*.desktop; do
-    grep -q NoDisplay $app || sed '/^Icon=/a NoDisplay=true' -i $app
+    grep -q NoDisplay $app || sed '/^Icon=/a NoDisplay=true' -i "$app"
 done
 ```
 
@@ -215,7 +236,7 @@ panel-position=none
 
 #### 2. Create a Startup Script
 
-Save the repository `waydroid-session.sh` as `/usr/bin/waydroid-session.sh` (or copy the same file from this project). It defaults to **Cage** and uses a proper `cleanup` trap on `EXIT`, `INT`, `TERM`, and `HUP`. To use Weston instead, set `WAYDROID_COMPOSITOR=weston` in the desktop entry `Exec` line or environment.
+Save the repository `waydroid-session.sh` as `/usr/bin/waydroid-session.sh` (or copy the same file from this project). It defaults to **Cage** and uses a proper `cleanup` trap on `EXIT`, `INT`, `[...]
 
 Make it executable:
 
@@ -267,12 +288,37 @@ Run the `clean-removal.sh` script:
 
 ---
 
+## Security Notes
+
+### Best Practices Implemented
+
+✅ **Repository Script Verification**: The install script now downloads the repository setup script to a temporary file and prompts you to review it before execution.
+
+✅ **Removed Redundant sudo**: Scripts that are meant to run with elevated privileges no longer call `sudo` internally.
+
+✅ **Improved Error Handling**: All scripts now include proper error checking and informative error messages.
+
+✅ **Safe File Operations**: Find commands use null separators to safely handle filenames with spaces.
+
+✅ **Variable Quoting**: All variables are properly quoted to prevent word splitting and globbing issues.
+
+✅ **Input Validation**: Compositor selection is validated early in the session script.
+
+### Important Recommendations
+
+1. **Always review scripts** before executing them, especially those downloaded from the internet.
+2. **Use the secure installation method** if you're unsure about the repository script.
+3. **Keep your system updated** with the latest security patches.
+4. **Monitor running processes** - Waydroid runs Android containers with elevated privileges.
+
+---
+
 ## Troubleshooting
 
 - **Weston startup issues**: Verify Weston and X11 configurations.
 - **Waydroid launch failures**: Ensure a running Weston session.
 - **Performance problems**: Allocate more system resources.
-- **Suspend/resume and `libwayland` client errors**: Weston can lose nested-Wayland state after repeated suspend cycles under some X11 window managers. The default session script uses **Cage** (`cage -s -- waydroid show-full-ui`) instead. To force the old behavior: `WAYDROID_COMPOSITOR=weston waydroid-session.sh`.
+- **Suspend/resume and `libwayland` client errors**: Weston can lose nested-Wayland state after repeated suspend cycles under some X11 window managers. The default session script uses **Cage** (`[...]
 
 ### Fixing Play Store Uncertified Device Issue
 
@@ -309,7 +355,7 @@ If you are using the GApps version of Waydroid and see a "Device is not certifie
    Go back to the `waydroid shell`. The user suggests running the following command to verify the ID.
    
    ```bash
-   ANDROID_RUNTIME_ROOT=/apex/com.android.runtime ANDROID_DATA=/data ANDROID_TZDATA_ROOT=/apex/com.android.tzdata ANDROID_I18N_ROOT=/apex/com.android.i18n sqlite3 /data/data/com.google.android.gsf/databases/gservices.db "select * from main where name = "android_id";"
+   ANDROID_RUNTIME_ROOT=/apex/com.android.runtime ANDROID_DATA=/data ANDROID_TZDATA_ROOT=/apex/com.android.tzdata ANDROID_I18N_ROOT=/apex/com.android.i18n sqlite3 /data/data/com.google.android.gs[...]
    ```
    
    After this, fully stop and restart Waydroid for the changes to take effect.
