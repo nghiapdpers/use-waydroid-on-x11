@@ -378,5 +378,6 @@ Good luck!
 - [Waydroid Documentation](https://docs.waydro.id/)
 - [Weston Documentation](https://wayland.freedesktop.org/)
 - [Bash Scripting Best Practices](https://mywiki.wooledge.org/BashGuide)
+- [Repository](https://github.com/nghiapdpers/use-waydroid-on-x11)
 
 ---
