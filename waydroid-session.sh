@@ -13,13 +13,14 @@ cd "$(dirname "$0")" || exit 1
 COMPOSITOR="${WAYDROID_COMPOSITOR:-cage}"
 COMPOSITOR=$(printf '%s' "$COMPOSITOR" | tr '[:upper:]' '[:lower:]')
 
-# Validate compositor choice
+# Validate compositor choice early
 case "$COMPOSITOR" in
   cage|weston)
     : # Valid choice
     ;;
   *)
-    echo "Unknown WAYDROID_COMPOSITOR=$COMPOSITOR (use cage or weston)" >&2
+    echo "Error: Unknown WAYDROID_COMPOSITOR=$COMPOSITOR" >&2
+    echo "Supported compositors: cage, weston" >&2
     exit 1
     ;;
 esac
@@ -54,8 +55,9 @@ trap cleanup EXIT INT TERM HUP
 
 run_cage() {
   if ! command -v cage >/dev/null 2>&1; then
-    echo "Error: cage not found. Install it with: sudo apt install cage" >&2
-    echo "Or use Weston instead: WAYDROID_COMPOSITOR=weston waydroid-session.sh" >&2
+    echo "Error: cage not found" >&2
+    echo "Install it with: sudo apt install cage" >&2
+    echo "Or use Weston: WAYDROID_COMPOSITOR=weston waydroid-session.sh" >&2
     exit 1
   fi
   # Foreground: do not exec, so EXIT trap still runs when Cage exits.
@@ -64,7 +66,8 @@ run_cage() {
 
 run_weston() {
   if ! command -v weston >/dev/null 2>&1; then
-    echo "Error: weston not found. Install it with: sudo apt install weston" >&2
+    echo "Error: weston not found" >&2
+    echo "Install it with: sudo apt install weston" >&2
     exit 1
   fi
   weston --xwayland &

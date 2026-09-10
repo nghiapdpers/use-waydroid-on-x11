@@ -112,7 +112,7 @@ Follow these steps with Weston running (nested on X11 is the expected case here)
    weston --xwayland
    ```
 
-   If you use a custom socket (`weston --socket=NAME`), set `export WAYLAND_DISPLAY=NAME` in any terminal where you run Waydroid. If a compositor already uses `wayland-0` (for example you are not[...]
+   If you use a custom socket (`weston --socket=NAME`), set `export WAYLAND_DISPLAY=NAME` in any terminal where you run Waydroid.
 
 2. **Initialize Waydroid**:
    
@@ -180,7 +180,7 @@ Or manually:
 
 ```bash
 for app in ~/.local/share/applications/waydroid.*.desktop; do
-    grep -q NoDisplay $app || sed '/^Icon=/a NoDisplay=true' -i "$app"
+    grep -q NoDisplay "$app" || sed '/^Icon=/a NoDisplay=true' -i "$app"
 done
 ```
 
@@ -236,7 +236,7 @@ panel-position=none
 
 #### 2. Create a Startup Script
 
-Save the repository `waydroid-session.sh` as `/usr/bin/waydroid-session.sh` (or copy the same file from this project). It defaults to **Cage** and uses a proper `cleanup` trap on `EXIT`, `INT`, `[...]
+Save the repository `waydroid-session.sh` as `/usr/bin/waydroid-session.sh` (or copy the same file from this project). It defaults to **Cage** and uses a proper `cleanup` trap on `EXIT`, `INT`, etc.
 
 Make it executable:
 
@@ -296,20 +296,23 @@ Run the `clean-removal.sh` script:
 
 ✅ **Removed Redundant sudo**: Scripts that are meant to run with elevated privileges no longer call `sudo` internally.
 
-✅ **Improved Error Handling**: All scripts now include proper error checking and informative error messages.
+✅ **Improved Error Handling**: All scripts now include proper error checking and informative error messages using `set -e`.
 
-✅ **Safe File Operations**: Find commands use null separators to safely handle filenames with spaces.
+✅ **Safe File Operations**: Find commands use null separators (`-print0` with `xargs -0`) to safely handle filenames with spaces.
 
 ✅ **Variable Quoting**: All variables are properly quoted to prevent word splitting and globbing issues.
 
-✅ **Input Validation**: Compositor selection is validated early in the session script.
+✅ **Input Validation**: Compositor selection is validated early in the session script to prevent injection attacks.
+
+✅ **Backup Creation**: Configuration modifications create backup files (`.bak`) before changes.
 
 ### Important Recommendations
 
 1. **Always review scripts** before executing them, especially those downloaded from the internet.
 2. **Use the secure installation method** if you're unsure about the repository script.
-3. **Keep your system updated** with the latest security patches.
+3. **Keep your system updated** with the latest security patches (`sudo apt update && sudo apt upgrade`).
 4. **Monitor running processes** - Waydroid runs Android containers with elevated privileges.
+5. **Use strong credentials** if configuring Google Play on Waydroid.
 
 ---
 
@@ -318,7 +321,7 @@ Run the `clean-removal.sh` script:
 - **Weston startup issues**: Verify Weston and X11 configurations.
 - **Waydroid launch failures**: Ensure a running Weston session.
 - **Performance problems**: Allocate more system resources.
-- **Suspend/resume and `libwayland` client errors**: Weston can lose nested-Wayland state after repeated suspend cycles under some X11 window managers. The default session script uses **Cage** (`[...]
+- **Suspend/resume and `libwayland` client errors**: Weston can lose nested-Wayland state after repeated suspend cycles under some X11 window managers. The default session script uses **Cage** which is more stable for this scenario.
 
 ### Fixing Play Store Uncertified Device Issue
 
@@ -338,7 +341,7 @@ If you are using the GApps version of Waydroid and see a "Device is not certifie
    
    Inside the `waydroid shell`, run this command to get your Google Services Framework ID:
    
-   ```sql
+   ```bash
    sqlite3 /data/data/com.google.android.gsf/databases/gservices.db "SELECT * FROM main WHERE name = 'android_id';"
    ```
    
@@ -352,10 +355,10 @@ If you are using the GApps version of Waydroid and see a "Device is not certifie
 
 4. **Verify and Restart**
    
-   Go back to the `waydroid shell`. The user suggests running the following command to verify the ID.
+   Go back to the `waydroid shell` and run:
    
    ```bash
-   ANDROID_RUNTIME_ROOT=/apex/com.android.runtime ANDROID_DATA=/data ANDROID_TZDATA_ROOT=/apex/com.android.tzdata ANDROID_I18N_ROOT=/apex/com.android.i18n sqlite3 /data/data/com.google.android.gs[...]
+   ANDROID_RUNTIME_ROOT=/apex/com.android.runtime ANDROID_DATA=/data ANDROID_TZDATA_ROOT=/apex/com.android.tzdata ANDROID_I18N_ROOT=/apex/com.android.i18n sqlite3 /data/data/com.google.android.gms/databases/checkin.db "SELECT * FROM main WHERE name = 'android_id';"
    ```
    
    After this, fully stop and restart Waydroid for the changes to take effect.
@@ -374,5 +377,6 @@ Good luck!
 
 - [Waydroid Documentation](https://docs.waydro.id/)
 - [Weston Documentation](https://wayland.freedesktop.org/)
+- [Bash Scripting Best Practices](https://mywiki.wooledge.org/BashGuide)
 
 ---
