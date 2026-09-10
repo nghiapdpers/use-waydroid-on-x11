@@ -28,6 +28,13 @@ apt purge -y cage weston
 apt autoremove -y
 
 # Delete user configuration and cache related to Waydroid
+if [ -n "$SUDO_USER" ]; then
+    user_home=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+    rm -rf "$user_home/.config/waydroid"
+    rm -rf "$user_home/.local/share/waydroid"
+    rm -rf "$user_home/.cache/waydroid"
+    find "$user_home/.local/share/applications" -type f -name '*waydroid*.desktop' -print0 2>/dev/null | xargs -0 rm -f
+fi
 rm -rf ~/.config/waydroid
 rm -rf ~/.local/share/waydroid
 rm -rf ~/.cache/waydroid
@@ -37,6 +44,7 @@ find ~/.local/share/applications -type f -name '*waydroid*.desktop' -print0 2>/d
 
 # Remove any system-wide .desktop files related to Waydroid (if present)
 find /usr/share/applications -type f -name '*waydroid*.desktop' -print0 2>/dev/null | xargs -0 rm -f
+rm -f /usr/bin/waydroid-session.sh
 
 # Clean up remaining Waydroid directories (safety check)
 rm -rf /var/lib/waydroid

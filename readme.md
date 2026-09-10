@@ -359,6 +359,38 @@ sudo waydroid init
 
 However, **we strongly recommend** reviewing scripts before running them for security reasons.
 
+### Black Screen on NVIDIA GPUs (SurfaceFlinger Crash)
+
+If you have an **NVIDIA GPU** using the proprietary NVIDIA driver (e.g. `nvidia-driver-390`, `nvidia-driver-470`, `nvidia-driver-535`, etc.), Waydroid will open to a black screen because the proprietary NVIDIA driver does not support GBM/Mesa hardware acceleration in the Android container. Android's `surfaceflinger` will crash in an endless loop, causing Cage/Weston to receive invalid geometry and remain black.
+
+**Fix: Enable CPU Software Rendering (SwiftShader)**:
+
+1. Stop any running session:
+   ```bash
+   waydroid session stop
+   ```
+
+2. Configure Waydroid to use SwiftShader:
+   ```bash
+   sudo waydroid prop set ro.hardware.gralloc default
+   sudo waydroid prop set ro.hardware.egl swiftshader
+   ```
+
+   *(Alternatively, edit `/var/lib/waydroid/waydroid.cfg` and under `[properties]` add `ro.hardware.gralloc = default` and `ro.hardware.egl = swiftshader`)*
+
+3. Apply the properties and restart the container:
+   ```bash
+   sudo waydroid upgrade -o
+   sudo systemctl restart waydroid-container
+   ```
+
+4. Launch Waydroid again:
+   ```bash
+   waydroid-session.sh
+   # Or using Weston if Cage exhibits glitches:
+   WAYDROID_COMPOSITOR=weston waydroid-session.sh
+   ```
+
 ### Other Common Issues
 
 - **Weston startup issues**: Verify Weston and X11 configurations.
