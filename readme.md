@@ -28,7 +28,7 @@
 
 ## Introduction
 
-This comprehensive guide walks you through setting up and optimizing **Waydroid** on an X11-based Linux system. Waydroid offers a seamless Android container experience, tightly integrated into your desktop environment, with enhanced security practices throughout.
+This comprehensive guide walks you through setting up and optimizing **Waydroid** on an X11-based Linux system. Waydroid offers a seamless Android container experience, tightly integrated into your desktop environment.
 
 ---
 
@@ -58,7 +58,7 @@ You can use the following one-liner to install and set up Waydroid directly with
 curl -sSL https://raw.githubusercontent.com/nghiapdpers/use-waydroid-on-x11/master/install.sh | sudo bash
 ```
 
-**Note:** The installation script will prompt you to review the repository setup script before execution for security purposes.
+**Note:** The installation script will prompt you to review the repository setup script before execution for security purposes. When prompted, type **`yes`** and press **Enter** to continue.
 
 ### Manual Install
 
@@ -318,10 +318,53 @@ Run the `clean-removal.sh` script:
 
 ## Troubleshooting
 
+### Installation Script Hanging at Repository Review
+
+If the auto-install script hangs after displaying:
+```
+Repository script downloaded to /tmp/tmp.roAYqckh1B
+Please review the script before proceeding:
+---
+```
+
+**Solution**: This is expected behavior! The script pauses for your security review. Simply type **`yes`** and press **Enter** to continue with the installation.
+
+**Why this happens**: The script includes a security feature that requires you to confirm before adding the Waydroid repository. This prevents unauthorized automatic repository additions.
+
+**Full interaction example**:
+```bash
+$ curl -sSL https://raw.githubusercontent.com/nghiapdpers/use-waydroid-on-x11/master/install.sh | sudo bash
+
+[... script outputs ...]
+
+Repository script downloaded to /tmp/tmp.roAYqckh1B
+Please review the script before proceeding:
+---
+#!/usr/bin/env bash
+# [... script content ...]
+---
+Do you want to continue? (yes/no): yes    ← Type 'yes' here
+```
+
+### Skip Confirmation (Not Recommended)
+
+If you absolutely trust the repository and want to skip the prompt, you can manually run the Waydroid repository setup:
+
+```bash
+curl https://repo.waydro.id | sudo bash
+apt update
+sudo apt install waydroid -y
+sudo waydroid init
+```
+
+However, **we strongly recommend** reviewing scripts before running them for security reasons.
+
+### Other Common Issues
+
 - **Weston startup issues**: Verify Weston and X11 configurations.
 - **Waydroid launch failures**: Ensure a running Weston session.
 - **Performance problems**: Allocate more system resources.
-- **Suspend/resume and `libwayland` client errors**: Weston can lose nested-Wayland state after repeated suspend cycles under some X11 window managers. The default session script uses **Cage** which is more stable for this scenario.
+- **Suspend/resume and `libwayland` client errors**: Weston can lose nested-Wayland state after repeated suspend cycles under some X11 window managers. The default session script uses **Cage** which handles this better.
 
 ### Fixing Play Store Uncertified Device Issue
 
@@ -358,7 +401,7 @@ If you are using the GApps version of Waydroid and see a "Device is not certifie
    Go back to the `waydroid shell` and run:
    
    ```bash
-   ANDROID_RUNTIME_ROOT=/apex/com.android.runtime ANDROID_DATA=/data ANDROID_TZDATA_ROOT=/apex/com.android.tzdata ANDROID_I18N_ROOT=/apex/com.android.i18n sqlite3 /data/data/com.google.android.gms/databases/checkin.db "SELECT * FROM main WHERE name = 'android_id';"
+   ANDROID_RUNTIME_ROOT=/apex/com.android.runtime ANDROID_DATA=/data ANDROID_TZDATA_ROOT=/apex/com.android.tzdata ANDROID_I18N_ROOT=/apex/com.android.i18n sqlite3 /data/data/com.google.android.gm[...]
    ```
    
    After this, fully stop and restart Waydroid for the changes to take effect.
