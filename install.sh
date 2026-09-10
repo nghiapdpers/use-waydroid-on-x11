@@ -15,23 +15,46 @@ check_root() {
 # Function to install prerequisites
 install_prerequisites() {
     echo "Installing prerequisites..."
-    sudo apt update
-    sudo apt install -y curl ca-certificates python3-pip wl-clipboard
+    apt update
+    apt install -y curl ca-certificates python3-pip wl-clipboard gnupg
 }
 
 # Function to install nested Wayland compositors (Cage default in session script; Weston optional)
 install_compositors() {
     echo "Installing Cage and Weston..."
-    sudo apt install -y cage weston
+    apt install -y cage weston
 }
 
-# Function to install Waydroid
+# Function to install Waydroid with repository verification
 install_waydroid() {
+    echo "Downloading Waydroid repository setup script..."
+    local repo_script
+    repo_script=$(mktemp)
+    trap "rm -f '$repo_script'" RETURN
+    
+    if ! curl -fsSL https://repo.waydro.id -o "$repo_script"; then
+        echo "Error: Failed to download Waydroid repository script" >&2
+        return 1
+    fi
+    
+    # Optional: Verify the script before execution
+    echo "Repository script downloaded to $repo_script"
+    echo "Please review the script before proceeding:"
+    echo "---"
+    head -n 20 "$repo_script"
+    echo "---"
+    read -rp "Do you want to continue? (yes/no): " confirm
+    
+    if [ "$confirm" != "yes" ]; then
+        echo "Installation cancelled."
+        return 1
+    fi
+    
     echo "Adding Waydroid repository..."
-    curl https://repo.waydro.id | sudo bash
+    bash "$repo_script"
 
     echo "Installing Waydroid..."
-    sudo apt install -y waydroid
+    apt install -y waydroid
 }
 
 # Function to initialize Waydroid
@@ -44,11 +67,11 @@ initialize_waydroid() {
     case $choice in
         1)
             echo "Initializing Waydroid without Google Apps..."
-            sudo waydroid init
+            waydroid init
             ;;
         2)
             echo "Initializing Waydroid with Google Apps..."
-            sudo waydroid init -f -s GAPPS
+            waydroid init -f -s GAPPS
             ;;
         *)
             echo "Invalid choice. Please run the script again."
@@ -60,7 +83,7 @@ initialize_waydroid() {
 # Function to configure additional settings
 configure_additional_settings() {
     echo "Configuring clipboard integration..."
-    sudo pip3 install pyclip
+    pip3 install pyclip
 
     echo "Creating Weston configuration..."
     mkdir -p ~/.config
@@ -78,9 +101,9 @@ EOF
         _install_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     fi
     if [ -n "$_install_dir" ] && [ -f "$_install_dir/waydroid-session.sh" ]; then
-        sudo install -m 755 "$_install_dir/waydroid-session.sh" /usr/bin/waydroid-session.sh
+        install -m 755 "$_install_dir/waydroid-session.sh" /usr/bin/waydroid-session.sh
     else
-        sudo tee /usr/bin/waydroid-session.sh > /dev/null <<'EOS'
+        tee /usr/bin/waydroid-session.sh > /dev/null <<'EOS'
 #!/bin/bash
 
 # Start Waydroid inside a nested Wayland compositor on X11.
@@ -155,11 +178,11 @@ case "$COMPOSITOR" in
     ;;
 esac
 EOS
-        sudo chmod +x /usr/bin/waydroid-session.sh
+        chmod +x /usr/bin/waydroid-session.sh
     fi
 
     echo "Creating Waydroid desktop entry..."
-    sudo bash -c 'cat <<EOF > /usr/share/applications/waydroid-session.desktop
+    bash -c 'cat <<EOF > /usr/share/applications/waydroid-session.desktop
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -170,7 +193,7 @@ Icon=waydroid
 Terminal=false
 Categories=System;Emulator;
 EOF'
-    sudo chmod +x /usr/share/applications/waydroid-session.desktop
+    chmod +x /usr/share/applications/waydroid-session.desktop
 }
 
 # Main script execution
@@ -178,14 +201,20 @@ main() {
     check_root
     install_prerequisites
     install_compositors
-    install_waydroid
+    install_waydroid || { echo "Waydroid installation failed" >&2; exit 1; }
     initialize_waydroid
     configure_additional_settings
 
+    echo ""
+    echo "=========================================="
     echo "Waydroid installation and configuration complete!"
-    echo "To start Waydroid, use the Waydroid Session desktop entry or run:"
-    echo "  waydroid-session.sh"
-    echo "Legacy Weston-style (if needed): WAYDROID_COMPOSITOR=weston waydroid-session.sh"
+    echo "=========================================="
+    echo ""
+    echo "To start Waydroid, use one of these methods:"
+    echo "  1. Find 'Waydroid Session' in your applications menu"
+    echo "  2. Run: waydroid-session.sh"
+    echo "  3. Run with Weston: WAYDROID_COMPOSITOR=weston waydroid-session.sh"
+    echo ""
 }
 
 main
